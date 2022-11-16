@@ -91,11 +91,18 @@ def compute_model_stats(model_path, colmap_path="colmap"):
         shutil.copy(str(largest_model / filename), str(model_path))
     return stats
 
-def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_camera=True, remove_dynamic=True, skip_geometric_verification=False, min_num_matches=None, skip_exists=False):
+def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap", 
+                        single_camera=True, remove_dynamic=True, 
+                        skip_geometric_verification=False, 
+                        min_num_matches=None, skip_exists=False):
     """
     Incremental structure-from-motion with COLMAP
     """
-    database_path, pair_txt_path = build_database(sfm_dir, image_dir, traj_dir, colmap_path=colmap_path, single_camera=single_camera, remove_dynamic=remove_dynamic, skip_geometric_verification=skip_geometric_verification, skip_exists=skip_exists)
+    database_path, pair_txt_path = build_database(sfm_dir, image_dir, traj_dir, 
+                                    colmap_path=colmap_path, single_camera=single_camera, 
+                                    remove_dynamic=remove_dynamic, 
+                                    skip_geometric_verification=skip_geometric_verification, 
+                                    skip_exists=skip_exists)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 
@@ -120,14 +127,21 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap", sin
     if stats is not None:
         print(stats)
 
-def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None, colmap_path="colmap", single_camera=True, remove_dynamic=True, skip_geometric_verification=False, min_num_matches=None, skip_exists=False):
+def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None, 
+                    colmap_path="colmap", single_camera=True, remove_dynamic=True, 
+                    skip_geometric_verification=False, 
+                    min_num_matches=None, skip_exists=False):
     """
     Global structure-from-motion for videos
     """
     if gcolmap_path is None:
         curpath = os.path.dirname(os.path.abspath(__file__))
         gcolmap_path = os.path.join(curpath, "gmapper/build/src/exe/gcolmap")
-    database_path, pair_txt_path = build_database(sfm_dir, image_dir, traj_dir, colmap_path=colmap_path, single_camera=single_camera, remove_dynamic=remove_dynamic, skip_geometric_verification=skip_geometric_verification, skip_exists=skip_exists)
+    database_path, pair_txt_path = build_database(sfm_dir, image_dir, traj_dir, 
+                                    colmap_path=colmap_path, single_camera=single_camera, 
+                                    remove_dynamic=remove_dynamic, 
+                                    skip_geometric_verification=skip_geometric_verification, 
+                                    skip_exists=skip_exists)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 
@@ -166,8 +180,12 @@ if __name__ == '__main__':
 
     if not args.incremental_sfm:
         # use global SfM by default
-        main_global_sfm(args.sfm_dir, args.image_dir, args.traj_dir, remove_dynamic=remove_dynamic, skip_geometric_verification=skip_geometric_verification)
+        main_global_sfm(args.sfm_dir, args.image_dir, args.traj_dir, 
+                        remove_dynamic=args.remove_dynamic, 
+                        skip_geometric_verification=args.skip_geometric_verification)
     else:
-        main_incremental_sfm(args.sfm_dir, args.image_dir, args.traj_dir, remove_dynamic=remove_dynamic, skip_geometric_verification=skip_geometric_verification)
+        main_incremental_sfm(args.sfm_dir, args.image_dir, args.traj_dir, 
+                            remove_dynamic=args.remove_dynamic, 
+                            skip_geometric_verification=args.skip_geometric_verification)
 
 

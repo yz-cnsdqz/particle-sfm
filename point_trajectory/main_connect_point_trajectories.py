@@ -24,7 +24,8 @@ from .track import track
 from .track_optimize import track_optimize
 from .optimize.build import particlesfm
 
-def main_connect_point_trajectories(flow_dir, traj_dir, sample_ratio=2, flow_check_thres=1.0, traj_min_len=3, skip_path_consistency=False, skip_exists=False):
+def main_connect_point_trajectories(flow_dir, traj_dir, sample_ratio=2, flow_check_thres=1.0, traj_min_len=3, 
+                                    skip_path_consistency=False, skip_exists=False):
     # initiate traj_dir
     os.makedirs(traj_dir, exist_ok=True)
     output_npy_fname = os.path.join(traj_dir, "track.npy")
@@ -62,7 +63,13 @@ def main_connect_point_trajectories(flow_dir, traj_dir, sample_ratio=2, flow_che
     np.save(output_npy_fname, trajectories)
 
 def main(args):
-    main_connect_point_trajectories(args.flow_dir, args.traj_dir, sample_ratio=args.sample_ratio, flow_check_thres=args.flow_check_thres, traj_min_len=args.traj_min_len, skip_path_consistency=args.skip_path_consistency)
+    main_connect_point_trajectories(args.flow_dir, args.traj_dir, 
+                                    sample_ratio=args.sample_ratio, 
+                                    flow_check_thres=args.flow_check_thres, 
+                                    traj_min_len=args.traj_min_len, 
+                                    skip_path_consistency=args.skip_path_consistency)
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Connecting and optimizing point trajectories from pairwise flows")

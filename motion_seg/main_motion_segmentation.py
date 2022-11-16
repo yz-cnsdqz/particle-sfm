@@ -30,7 +30,8 @@ from core.utils.utils import load_config_file, draw_traj_cls
 from core.network.traj_oa_depth import traj_oa_depth
 from .load_cut_seq import load_cut_seq
 
-def main_motion_segmentation(image_dir, depth_dir, traj_dir, output_traj_dir, config_file=None, window_size=10, traj_max_num=100000, skip_exists=False):
+def main_motion_segmentation(image_dir, depth_dir, traj_dir, output_traj_dir, config_file=None, window_size=10, 
+                            traj_max_num=100000, skip_exists=False):
     # TODO: actually images are only used for visualization in this function
     video_name = os.path.join(output_traj_dir, "motion_seg.mp4")
     if skip_exists and os.path.exists(video_name) and os.path.exists(output_traj_dir):

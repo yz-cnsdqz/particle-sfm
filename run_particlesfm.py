@@ -21,6 +21,7 @@ import os
 import argparse
 import shutil
 import pdb
+import time
 
 def connect_point_trajectory(args, image_dir, output_dir, skip_exists=False, keep_intermediate=False):
     # set directories in the workspace
@@ -38,7 +39,11 @@ def connect_point_trajectory(args, image_dir, output_dir, skip_exists=False, kee
     # point trajectory (saved in workspace_dir / point_trajectories)
     from point_trajectory import main_connect_point_trajectories
     print("[ParticleSfM] Connecting (optimization {0}) point trajectories from optical flows.......".format("disabled" if args.skip_path_consistency else "enabled"))
-    main_connect_point_trajectories(flow_dir, traj_dir, sample_ratio=args.sample_ratio, flow_check_thres=args.flow_check_thres, skip_path_consistency=args.skip_path_consistency, skip_exists=skip_exists)
+    main_connect_point_trajectories(flow_dir, traj_dir, 
+                                    sample_ratio=args.sample_ratio, 
+                                    flow_check_thres=args.flow_check_thres, 
+                                    skip_path_consistency=args.skip_path_consistency, 
+                                    skip_exists=skip_exists)
 
     if not keep_intermediate:
         # remove optical flows
@@ -59,7 +64,9 @@ def motion_segmentation(args, image_dir, output_dir, traj_dir, skip_exists=False
     # point trajectory based motion segmentation
     print("[ParticleSfM] Running point trajectory based motion segmentation........")
     from motion_seg import main_motion_segmentation
-    main_motion_segmentation(image_dir, depth_dir, traj_dir, labeled_traj_dir, window_size=args.window_size, traj_max_num=args.traj_max_num, skip_exists=skip_exists)
+    main_motion_segmentation(image_dir, depth_dir, traj_dir, labeled_traj_dir, 
+                            window_size=args.window_size, 
+                            traj_max_num=args.traj_max_num, skip_exists=skip_exists)
     if os.path.isfile(os.path.join(output_dir, "motion_seg.mp4")):
         os.remove(os.path.join(output_dir, "motion_seg.mp4"))
     shutil.move(os.path.join(labeled_traj_dir, "motion_seg.mp4"), output_dir)
@@ -101,6 +108,9 @@ def particlesfm(args, image_dir, output_dir, skip_exists=False, keep_intermediat
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+    # begin to count the time
+    ss = time.time()
+
     # connect point trajectory
     traj_dir = connect_point_trajectory(args, image_dir, output_dir, skip_exists=skip_exists, keep_intermediate=keep_intermediate)
 
@@ -111,6 +121,10 @@ def particlesfm(args, image_dir, output_dir, skip_exists=False, keep_intermediat
     # sfm reconstruction
     if not args.skip_sfm:
         sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=skip_exists, keep_intermediate=keep_intermediate)
+
+    print()
+    print('-- overall runtime = {:03f} seconds'.format(time.time()-ss))
+
 
 def parse_args():
     parser = argparse.ArgumentParser("Dense point trajectory based colmap reconstruction for videos")

@@ -61,7 +61,7 @@ def main(path, visualize=False):
 
     w.reset_camera_to_default()
     w.scene_shader = w.UNLIT
-    w.point_size = 1
+    w.point_size = 4
     w.enable_raw_mode(True)
     app.add_window(w)
     app.run()
