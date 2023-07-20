@@ -27,7 +27,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from colmap_utils.read_write_model import read_cameras_binary
 from import_feature_matches import *
 
-def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_camera=True, remove_dynamic=True, skip_geometric_verification=False, skip_exists=False):
+def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_camera=True, remove_dynamic=True, skip_geometric_verification=False, skip_exists=False,
+                   cam_file_path="none"):
     sfm_dir, image_dir = Path(sfm_dir), Path(image_dir)
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database_path = sfm_dir / 'database.db'
@@ -41,6 +42,9 @@ def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_ca
         os.remove(pair_txt_path)
 
     create_empty_db(database_path)
+    # import camera parameters
+    if cam_file_path != "none":
+        import_camera(database_path, cam_file_path)
     import_images(colmap_path, sfm_dir, image_dir, database_path, single_camera)
     image_ids = get_image_ids(database_path)
     import_keypoints_matches(image_ids, image_dir, database_path, pair_txt_path, traj_dir, skip_geometric_verification, remove_dynamic=remove_dynamic)
@@ -94,7 +98,8 @@ def compute_model_stats(model_path, colmap_path="colmap"):
 def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap", 
                         single_camera=True, remove_dynamic=True, 
                         skip_geometric_verification=False, 
-                        min_num_matches=None, skip_exists=False):
+                        min_num_matches=None, skip_exists=False,
+                        cam_file_path="none"):
     """
     Incremental structure-from-motion with COLMAP
     """
@@ -102,7 +107,8 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
                                     colmap_path=colmap_path, single_camera=single_camera, 
                                     remove_dynamic=remove_dynamic, 
                                     skip_geometric_verification=skip_geometric_verification, 
-                                    skip_exists=skip_exists)
+                                    skip_exists=skip_exists,
+                                    cam_file_path=cam_file_path)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 
@@ -130,7 +136,8 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
 def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None, 
                     colmap_path="colmap", single_camera=True, remove_dynamic=True, 
                     skip_geometric_verification=False, 
-                    min_num_matches=None, skip_exists=False):
+                    min_num_matches=None, skip_exists=False,
+                    cam_file_path="none"):
     """
     Global structure-from-motion for videos
     """
@@ -141,7 +148,8 @@ def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None,
                                     colmap_path=colmap_path, single_camera=single_camera, 
                                     remove_dynamic=remove_dynamic, 
                                     skip_geometric_verification=skip_geometric_verification, 
-                                    skip_exists=skip_exists)
+                                    skip_exists=skip_exists,
+                                    cam_file_path=cam_file_path)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 

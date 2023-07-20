@@ -103,6 +103,31 @@ def import_keypoints_matches(image_ids, image_dir, database_path, match_list_fil
     db.close()
     print('Imported.')
 
+
+def import_camera(database_path, cam_file_path):
+    """import the pre-calibrated camera intrinsics into the sfm database.
+    Note the camera models and the needed camera parameters, pls refer to
+    - https://colmap.github.io/cameras.html
+    - https://github.com/colmap/colmap/blob/1555ff03e9fce85a2a1596095fee0f161524d844/src/base/camera_models.h#L201
+    Args:
+        database_path (str): the database path
+        cam_file_path (_type_): the camera file path
+    """
+    _, file_extension = os.path.splitext(cam_file_path)
+    assert file_extension == '.pkl', 'the camera file should be .pkl'
+    cam_param = np.load(cam_file_path, allow_pickle=True)
+    assert 'image_size' in cam_param, 'image_size is missing in cam_param.'
+    img_width, img_height = cam_param['image_size']
+    assert 'cameraMatrix' in cam_param, 'cameraMatrix is missing in cam_param.'
+    cam_K = cam_param['cameraMatrix']
+    db = COLMAPDatabase.connect(database_path)
+    # Pinhole camera model.
+    db.add_camera(1, img_width, img_height, (cam_K[0,0], cam_K[1,1], cam_K[0,-1], cam_K[1,-1]))
+    db.commit()
+    
+    
+
+
 def geometric_verification(colmap_path, database_path, pairs_path):
     print('Performing geometric verification of the matches...')
     cmd = [

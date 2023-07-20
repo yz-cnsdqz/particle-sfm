@@ -77,7 +77,8 @@ def motion_segmentation(args, image_dir, output_dir, traj_dir, skip_exists=False
         shutil.rmtree(traj_dir)
     return labeled_traj_dir
 
-def sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=False, keep_intermediate=False):
+def sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=False, keep_intermediate=False,
+                       cam_file_path='none'):
     # set directories in the workspace
     sfm_dir = os.path.join(output_dir, "sfm")
 
@@ -85,10 +86,12 @@ def sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=False,
     from sfm import main_global_sfm, main_incremental_sfm, write_depth_pose_from_colmap_format
     if not args.incremental_sfm:
         print("[ParticleSfM] Running global structure-from-motion........")
-        main_global_sfm(sfm_dir, image_dir, traj_dir, remove_dynamic=(not args.assume_static), skip_exists=skip_exists)
+        main_global_sfm(sfm_dir, image_dir, traj_dir, remove_dynamic=(not args.assume_static), skip_exists=skip_exists,
+                        cam_file_path=cam_file_path)
     else:
         print("[ParticleSfM] Running incremental structure-from-motion with COLMAP........")
-        main_incremental_sfm(sfm_dir, image_dir, traj_dir, remove_dynamic=(not args.assume_static), skip_exists=skip_exists)
+        main_incremental_sfm(sfm_dir, image_dir, traj_dir, remove_dynamic=(not args.assume_static), skip_exists=skip_exists,
+                             cam_file_path=cam_file_path)
 
     # # write depth and pose files from COLMAP format
     write_depth_pose_from_colmap_format(sfm_dir, os.path.join(output_dir, "colmap_outputs_converted"))
@@ -97,7 +100,7 @@ def sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=False,
         # remove labeled point trajectories
         shutil.rmtree(traj_dir)
 
-def particlesfm(args, image_dir, output_dir, skip_exists=False, keep_intermediate=False):
+def particlesfm(args, image_dir, output_dir, skip_exists=False, keep_intermediate=False, cam_file_path="none"):
     """
     Inputs:
     - img_dir: str - The folder containing input images
@@ -120,7 +123,8 @@ def particlesfm(args, image_dir, output_dir, skip_exists=False, keep_intermediat
 
     # sfm reconstruction
     if not args.skip_sfm:
-        sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=skip_exists, keep_intermediate=keep_intermediate)
+        sfm_reconstruction(args, image_dir, output_dir, traj_dir, skip_exists=skip_exists, keep_intermediate=keep_intermediate,
+                           cam_file_path=cam_file_path)
 
     print()
     print('-- overall runtime = {:03f} seconds'.format(time.time()-ss))
@@ -163,16 +167,22 @@ def parse_args():
     #            - xxxxxx.png
     #    - XXX (sequence 2)
     parser.add_argument("--root_dir", type=str, default="none", help='path to to the folder containing workspaces')
+    
+    # use camera intrinsics file
+    # if not "none", the camera intrinsics will be employed and will not be updated.
+    # Note that we assume the input images have been undistorted.
+    parser.add_argument("--cam_intrinsics_file", type=str, default="none", help='path to to the camera calibration file')
+    
     args = parser.parse_args()
     return args
 
 if __name__ == "__main__":
     args = parse_args()
     if args.image_dir != "none" and args.output_dir != "none": # input by sequence directory
-        particlesfm(args, args.image_dir, args.output_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate)
+        particlesfm(args, args.image_dir, args.output_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate, cam_file_path=args.cam_intrinsics_file)
     elif args.workspace_dir != "none":
         image_dir = os.path.join(args.workspace_dir, args.image_folder)
-        particlesfm(args, image_dir, args.workspace_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate)
+        particlesfm(args, image_dir, args.workspace_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate, cam_file_path=args.cam_intrinsics_file)
     elif args.root_dir != "none":
         if not os.path.exists(args.root_dir):
             raise ValueError("Error! The input folder {0} is not found.".format(args.root_dir))
@@ -181,7 +191,7 @@ if __name__ == "__main__":
         for seq_name in seq_names:
             workspace_dir = os.path.join(args.root_dir, seq_name)
             image_dir = os.path.join(workspace_dir, args.image_folder)
-            particlesfm(args, image_dir, workspace_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate)
+            particlesfm(args, image_dir, workspace_dir, skip_exists=args.skip_exists, keep_intermediate=args.keep_intermediate, cam_file_path=args.cam_intrinsics_file)
     else:
         raise ValueError("Error! No input provided.")
 
