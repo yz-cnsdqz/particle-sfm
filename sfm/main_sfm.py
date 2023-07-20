@@ -125,6 +125,13 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
     cmd += ['--Mapper.multiple_models', str(0),
         '--Mapper.ba_refine_principal_point', str(0),
         '--Mapper.ba_refine_extra_params', str(0)]
+    # AHA, the above lines actually will stop updating the camera intrinsics. 
+    # will test later.
+    # if cam_file_path != "none":
+    #     cmd += ['--Mapper.ba_refine_focal_length', str(0),
+    #             '--Mapper.ba_refine_principal_point', str(0),
+    #             ]
+    
     print(' '.join(cmd))
     subprocess.run(cmd, check=True)
 
