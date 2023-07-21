@@ -13,12 +13,21 @@ A good practice would be `sample_ratio=4 or 8`.
 
 
 ---
-## Experiments on Iphone14ProMax
+## Experiment on Iphone14ProMax
+In this experiment, we use the iPhone14 Pro Max to capture a video. We use the 0.5x camera mode (focal length=13mm), and capture a video of 600+ frames at 30fps.
+
+Following is the setting that we use. Note that `--cam_intrinsics_file=$cam_file_path` is a new feature in this repo, which reads the pre-calibrated camera intrinsics and keep it fixed to all images in the bundle adjustment process, i.e. `colmap mapper ...`. Before running particlesfm, we need to put all undistorted frames into a folder. Moreover, the file `iphone14promax_video0.5_intrinsic.pkl` is obtained with a checkerboard based on OpenCV, and should contain a python dict with image sizes and 3x3 camera matrix. See the code for details.
 
 ```
-python run_particlesfm.py --image_dir=/mnt/hdd/datasets/Iphone14ProMax/IMG_5681.MOV_mediapipe/frames/ --output_dir ./outputs/iphone/ --sample_ratio=64 --incremental_sfm --cam_intrinsics_file=/home/yzhang/workspaces/CAMTOOBOX/data/iphone14promax_video0.5_intrinsic.pkl --skip_exists --traj_min_len=120 --window_size=10 --skip_path_consistency
+python run_particlesfm.py --image_dir=/mnt/hdd/datasets/Iphone14ProMax/IMG_5681.MOV_mediapipe/frames/ --output_dir ./outputs/iphone/ --sample_ratio=64 --incremental_sfm --cam_intrinsics_file=/home/yzhang/workspaces/CAMTOOBOX/data/iphone14promax_video0.5_intrinsic.pkl --skip_exists --traj_min_len=120 --window_size=10 --skip_path_consistency --keep_intermediate
 ```
 
+The result looks quite reasonable. The camera intrinsics are identical for all images, and the camera poses are perceptually correct. Note that the obtained camera poses and scene point cloud is upto a scale. To save memory, we set `--sample_ratio=64`, so the obtained scene map is of very low resolution. It is fine, because we focus on camera localization.
+
+<img src="misc/media/result_iphone.png" alt="drawing" height="450"/>
+
+
+Note that we have many frames so the entire process takes long, and is prone to OOM errors. So we re-start the whole process several times after the optical flows are computed. In addition, the colmap itself can take 15-30 minutes as well.
 
 ```
 Elapsed time: 31.296 [minutes]
@@ -27,7 +36,7 @@ WARNING:root:This SfM file structure was deprecated in hloc v1.1
 
 -- overall runtime = 2838.743058 seconds
 ```
-Due to OOM errors, we re-start the whole process several times after the optical flows are computed. So the overal runtime does not include optical flow computation.
+
 
 
 ---
