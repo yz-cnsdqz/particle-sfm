@@ -9,9 +9,28 @@ A good practice would be `sample_ratio=4 or 8`.
     - Too large frame jumps, because no point trajectories are produced.
     - textureless regions. One can check the motion_segmentation result videos to check.
 - The camera poses and intrinsics are estimated and saved in `colmap_outputs_converted/`. The resultant depth show how dense the points are.
+- When processing a HD video (1920x1080 resolution) with 600+ frames and 30fps, the program is both time- and memory-consuming. First, the optical flow computation takes ~5min to process all frames, and the connecting point trajectories operation takes more than 32GB RAM. In this case, we use special settings. Please see *experiments on iPhone14ProMax video* for details.
+
 
 ---
+## Experiments on Iphone14ProMax
 
+```
+python run_particlesfm.py --image_dir=/mnt/hdd/datasets/Iphone14ProMax/IMG_5681.MOV_mediapipe/frames/ --output_dir ./outputs/iphone/ --sample_ratio=64 --incremental_sfm --cam_intrinsics_file=/home/yzhang/workspaces/CAMTOOBOX/data/iphone14promax_video0.5_intrinsic.pkl --skip_exists --traj_min_len=120 --window_size=10 --skip_path_consistency
+```
+
+
+```
+Elapsed time: 31.296 [minutes]
+{'num_reg_images': 613, 'num_sparse_points': 1869, 'num_observations': 170483, 'mean_track_length': 91.216158, 'num_observations_per_image': 278.112561, 'mean_reproj_error': 1.0719}
+WARNING:root:This SfM file structure was deprecated in hloc v1.1
+
+-- overall runtime = 2838.743058 seconds
+```
+Due to OOM errors, we re-start the whole process several times after the optical flows are computed. So the overal runtime does not include optical flow computation.
+
+
+---
 ## Experiments on the MyCup sequence
 - The input sequence is downsampled to 5fps, contain 69 frames of 1280x720 resolution. The camera intrinsics are not given.
 - Specifically, provided the original video, we first run the following commands:

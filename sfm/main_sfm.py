@@ -42,10 +42,10 @@ def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_ca
         os.remove(pair_txt_path)
 
     create_empty_db(database_path)
-    # import camera parameters
-    if cam_file_path != "none":
-        import_camera(database_path, cam_file_path)
-    import_images(colmap_path, sfm_dir, image_dir, database_path, single_camera)
+    # # import camera parameters
+    # if cam_file_path != "none":
+    #     import_camera(database_path, cam_file_path)
+    import_images(colmap_path, sfm_dir, image_dir, database_path, single_camera,cam_file_path=cam_file_path)
     image_ids = get_image_ids(database_path)
     import_keypoints_matches(image_ids, image_dir, database_path, pair_txt_path, traj_dir, skip_geometric_verification, remove_dynamic=remove_dynamic)
     if not skip_geometric_verification:
@@ -125,12 +125,10 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
     cmd += ['--Mapper.multiple_models', str(0),
         '--Mapper.ba_refine_principal_point', str(0),
         '--Mapper.ba_refine_extra_params', str(0)]
-    # AHA, the above lines actually will stop updating the camera intrinsics. 
-    # will test later.
-    # if cam_file_path != "none":
-    #     cmd += ['--Mapper.ba_refine_focal_length', str(0),
-    #             '--Mapper.ba_refine_principal_point', str(0),
-    #             ]
+    # if cam intrinsics are given, we also keep it fixed.
+    if cam_file_path != "none":
+        cmd += ['--Mapper.ba_refine_focal_length', str(0),
+                ]
     
     print(' '.join(cmd))
     subprocess.run(cmd, check=True)

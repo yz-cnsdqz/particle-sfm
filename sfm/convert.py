@@ -61,9 +61,14 @@ def save_depth_pose(output_dir, cameras, images, points3D):
             f, cx, cy = params
         elif camera.model == 'SIMPLE_RADIAL':
             f, cx, cy, d = params
+        elif camera.model == 'PINHOLE':
+            fx, fy, cx, cy = params
         else:
             raise NotImplementedError
-        K = np.array([[f, 0, cx], [0, f, cy], [0,0,1]])
+        if camera.model != 'PINHOLE':
+            K = np.array([[f, 0, cx], [0, f, cy], [0,0,1]])
+        else:
+            K = np.array([[fx, 0, cx], [0, fy, cy], [0,0,1]])
         np.savetxt(os.path.join(intrinsic_dir, os.path.splitext(image_name)[0]+'.txt'), K)
         # world-to-cam quaternion and translation
         qvec, tvec = images[key].qvec, images[key].tvec

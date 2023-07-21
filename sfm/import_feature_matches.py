@@ -34,7 +34,8 @@ def create_empty_db(database_path):
 
 
 def import_images(colmap_path, sfm_dir, image_dir, database_path,
-                  single_camera=False):
+                  single_camera=False,
+                  cam_file_path='none'):
     print('Importing images into the database...')
     images = list(image_dir.iterdir())
     if len(images) == 0:
@@ -46,15 +47,36 @@ def import_images(colmap_path, sfm_dir, image_dir, database_path,
     for i in images:
         with open(str(dummy_dir / (i.name + '.txt')), 'w') as f:
             f.write('0 128')
-
-    cmd = [
-        str(colmap_path), 'feature_importer',
-        '--database_path', str(database_path),
-        '--image_path', str(image_dir),
-        '--import_path', str(dummy_dir),
-        '--ImageReader.single_camera',
-        str(int(single_camera)),
-        '--ImageReader.camera_model', 'SIMPLE_PINHOLE']
+    if cam_file_path == 'none':
+        cmd = [
+            str(colmap_path), 'feature_importer',
+            '--database_path', str(database_path),
+            '--image_path', str(image_dir),
+            '--import_path', str(dummy_dir),
+            '--ImageReader.single_camera',
+            str(int(single_camera)),
+            '--ImageReader.camera_model', 'SIMPLE_PINHOLE']
+    else:
+    #     Note the camera models and the needed camera parameters, pls refer to
+    # - https://colmap.github.io/cameras.html
+    # - https://github.com/colmap/colmap/blob/1555ff03e9fce85a2a1596095fee0f161524d844/src/base/camera_models.h#L201
+        _, file_extension = os.path.splitext(cam_file_path)
+        assert file_extension == '.pkl', 'the camera file should be .pkl'
+        cam_param = np.load(cam_file_path, allow_pickle=True)
+        assert 'image_size' in cam_param, 'image_size is missing in cam_param.'
+        img_width, img_height = cam_param['image_size']
+        assert 'cameraMatrix' in cam_param, 'cameraMatrix is missing in cam_param.'
+        cam_K = cam_param['cameraMatrix']
+        cmd = [
+            str(colmap_path), 'feature_importer',
+            '--database_path', str(database_path),
+            '--image_path', str(image_dir),
+            '--import_path', str(dummy_dir),
+            '--ImageReader.single_camera', str(1),
+            '--ImageReader.camera_model', 'PINHOLE',
+            '--ImageReader.camera_params','{:f},{:f},{:f},{:f}'.format(cam_K[0,0], cam_K[1,1], cam_K[0,-1], cam_K[1,-1]),
+            ]
+        
     subprocess.run(cmd, check=True)
 
     db = COLMAPDatabase.connect(database_path)
@@ -104,26 +126,28 @@ def import_keypoints_matches(image_ids, image_dir, database_path, match_list_fil
     print('Imported.')
 
 
-def import_camera(database_path, cam_file_path):
-    """import the pre-calibrated camera intrinsics into the sfm database.
-    Note the camera models and the needed camera parameters, pls refer to
-    - https://colmap.github.io/cameras.html
-    - https://github.com/colmap/colmap/blob/1555ff03e9fce85a2a1596095fee0f161524d844/src/base/camera_models.h#L201
-    Args:
-        database_path (str): the database path
-        cam_file_path (_type_): the camera file path
-    """
-    _, file_extension = os.path.splitext(cam_file_path)
-    assert file_extension == '.pkl', 'the camera file should be .pkl'
-    cam_param = np.load(cam_file_path, allow_pickle=True)
-    assert 'image_size' in cam_param, 'image_size is missing in cam_param.'
-    img_width, img_height = cam_param['image_size']
-    assert 'cameraMatrix' in cam_param, 'cameraMatrix is missing in cam_param.'
-    cam_K = cam_param['cameraMatrix']
-    db = COLMAPDatabase.connect(database_path)
-    # Pinhole camera model.
-    db.add_camera(1, img_width, img_height, (cam_K[0,0], cam_K[1,1], cam_K[0,-1], cam_K[1,-1]))
-    db.commit()
+# def import_camera(database_path, cam_file_path):
+#     """import the pre-calibrated camera intrinsics into the sfm database.
+#     Note the camera models and the needed camera parameters, pls refer to
+#     - https://colmap.github.io/cameras.html
+#     - https://github.com/colmap/colmap/blob/1555ff03e9fce85a2a1596095fee0f161524d844/src/base/camera_models.h#L201
+#     Args:
+#         database_path (str): the database path
+#         cam_file_path (_type_): the camera file path
+#     """
+#     _, file_extension = os.path.splitext(cam_file_path)
+#     assert file_extension == '.pkl', 'the camera file should be .pkl'
+#     cam_param = np.load(cam_file_path, allow_pickle=True)
+#     assert 'image_size' in cam_param, 'image_size is missing in cam_param.'
+#     img_width, img_height = cam_param['image_size']
+#     assert 'cameraMatrix' in cam_param, 'cameraMatrix is missing in cam_param.'
+#     cam_K = cam_param['cameraMatrix']
+#     db = COLMAPDatabase.connect(database_path)
+#     # Pinhole camera model.
+#     db.add_camera(1, img_width, img_height, (cam_K[0,0], cam_K[1,1], cam_K[0,-1], cam_K[1,-1]))
+#     db.commit()
+#     db.close()
+#     print('Camera Imported.')
     
     
 
