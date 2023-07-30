@@ -28,7 +28,7 @@ from colmap_utils.read_write_model import read_cameras_binary
 from import_feature_matches import *
 
 def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_camera=True, remove_dynamic=True, skip_geometric_verification=False, skip_exists=False,
-                   cam_file_path="none"):
+                   cam_file_path="none", img_resize_factor=1.0):
     sfm_dir, image_dir = Path(sfm_dir), Path(image_dir)
     sfm_dir.mkdir(parents=True, exist_ok=True)
     database_path = sfm_dir / 'database.db'
@@ -45,7 +45,7 @@ def build_database(sfm_dir, image_dir, traj_dir, colmap_path="colmap", single_ca
     # # import camera parameters
     # if cam_file_path != "none":
     #     import_camera(database_path, cam_file_path)
-    import_images(colmap_path, sfm_dir, image_dir, database_path, single_camera,cam_file_path=cam_file_path)
+    import_images(colmap_path, sfm_dir, image_dir, database_path, single_camera,cam_file_path=cam_file_path, img_resize_factor=img_resize_factor)
     image_ids = get_image_ids(database_path)
     import_keypoints_matches(image_ids, image_dir, database_path, pair_txt_path, traj_dir, skip_geometric_verification, remove_dynamic=remove_dynamic)
     if not skip_geometric_verification:
@@ -99,7 +99,7 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
                         single_camera=True, remove_dynamic=True, 
                         skip_geometric_verification=False, 
                         min_num_matches=None, skip_exists=False,
-                        cam_file_path="none"):
+                        cam_file_path="none", img_resize_factor=1.0):
     """
     Incremental structure-from-motion with COLMAP
     """
@@ -108,7 +108,8 @@ def main_incremental_sfm(sfm_dir, image_dir, traj_dir, colmap_path="colmap",
                                     remove_dynamic=remove_dynamic, 
                                     skip_geometric_verification=skip_geometric_verification, 
                                     skip_exists=skip_exists,
-                                    cam_file_path=cam_file_path)
+                                    cam_file_path=cam_file_path,
+                                    img_resize_factor=img_resize_factor)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 
@@ -142,10 +143,11 @@ def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None,
                     colmap_path="colmap", single_camera=True, remove_dynamic=True, 
                     skip_geometric_verification=False, 
                     min_num_matches=None, skip_exists=False,
-                    cam_file_path="none"):
+                    cam_file_path="none", img_resize_factor=1.0):
     """
     Global structure-from-motion for videos
     """
+    print('NOTE camera intrinsics if not fixed for this global mapper.')
     if gcolmap_path is None:
         curpath = os.path.dirname(os.path.abspath(__file__))
         gcolmap_path = os.path.join(curpath, "gmapper/build/src/exe/gcolmap")
@@ -154,7 +156,8 @@ def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None,
                                     remove_dynamic=remove_dynamic, 
                                     skip_geometric_verification=skip_geometric_verification, 
                                     skip_exists=skip_exists,
-                                    cam_file_path=cam_file_path)
+                                    cam_file_path=cam_file_path,
+                                    img_resize_factor=img_resize_factor)
     model_path = Path(sfm_dir) / 'model'
     model_path.mkdir(exist_ok=True, parents=True)
 
@@ -170,6 +173,10 @@ def main_global_sfm(sfm_dir, image_dir, traj_dir, gcolmap_path=None,
         cmd += ['--GlobalMapper.min_num_matches', str(min_num_matches)]
     cmd += ['--GlobalMapper.ba_refine_principal_point', str(0),
         '--GlobalMapper.ba_refine_extra_params', str(0)]
+    if cam_file_path != "none":
+        cmd += ['--GlobalMapper.ba_refine_focal_length', str(0),
+                ]
+    
     print(' '.join(cmd))
     subprocess.run(cmd, check=True)
 

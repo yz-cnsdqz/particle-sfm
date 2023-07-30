@@ -19,6 +19,7 @@ import numpy as np
 import argparse
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+import trimesh
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from colmap_utils.read_write_model import qvec2rotmat, read_model
@@ -39,6 +40,16 @@ def normalize_depth_for_display(depth, pc=98, cmap='gray'):
     depth = np.clip(depth, 0, 1)
     depth = gray2rgb(depth, cmap=cmap)
     return depth
+
+
+def save_ply_rgb(xyz, rgb, ply_path):
+  
+  colors = np.asarray(rgb, dtype='uint8')
+  ply = trimesh.points.PointCloud(vertices=xyz, colors=colors)
+  _ = ply.export(ply_path)
+
+  return
+
 
 def save_depth_pose(output_dir, cameras, images, points3D):
     # Save the sparse depth image and camera pose (world-to-cam) from colmap outputs
@@ -76,16 +87,21 @@ def save_depth_pose(output_dir, cameras, images, points3D):
         # acquire 3d points
         xys = images[key].xys
         points3D_ids = images[key].point3D_ids
-        points_3d, valid_xys = [], []
+        points_3d, points_3d_rgb, valid_xys = [], [], []
         for i in range(len(points3D_ids)):
             idx = points3D_ids[i]
             if idx == -1:
                 continue
             points_3d.append((points3D[idx].xyz))
+            points_3d_rgb.append((points3D[idx].rgb))
             valid_xys.append(xys[i])
 
-        points_3d = np.transpose(np.array(points_3d))
+        points_3d = np.array(points_3d)
+        points_3d_rgb = np.array(points_3d_rgb)
+        save_ply_rgb(points_3d, points_3d_rgb, os.path.join(output_dir, 'scenemap.ply'))
+        
         # project onto image
+        points_3d = np.transpose(points_3d)
         cam_points = np.matmul(R, points_3d) + t
         project_depth = np.transpose(np.matmul(K, cam_points))[:,-1]
         xy_int = np.round(np.array(valid_xys)).astype(np.int32)
@@ -93,10 +109,13 @@ def save_depth_pose(output_dir, cameras, images, points3D):
         xy_int[:,1] = np.clip(xy_int[:,1], 0, h-1)
         depth = np.zeros(shape=(h,w))
         depth[xy_int[:,1], xy_int[:,0]] = project_depth
-        # save depth and pose
+        # save depth and pose and point clouds
         np.save(os.path.join(depth_dir, os.path.splitext(image_name)[0]+'.npy'), depth)
         plt.imsave(os.path.join(depth_dir, os.path.splitext(image_name)[0]+'.png'), normalize_depth_for_display(depth, cmap='binary'))
         np.savetxt(os.path.join(pose_dir, os.path.splitext(image_name)[0]+'.txt'), np.concatenate([R, t], -1))
+
+
+
 
 def write_depth_pose_from_colmap_format(input_dir, output_dir):
     model = read_model(input_dir)
@@ -105,6 +124,9 @@ def write_depth_pose_from_colmap_format(input_dir, output_dir):
     else:
         cameras, images, points3D = model
     save_depth_pose(output_dir, cameras, images, points3D)
+
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Read and write COLMAP binary and text models")

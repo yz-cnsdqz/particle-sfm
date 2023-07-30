@@ -35,7 +35,8 @@ def create_empty_db(database_path):
 
 def import_images(colmap_path, sfm_dir, image_dir, database_path,
                   single_camera=False,
-                  cam_file_path='none'):
+                  cam_file_path='none',
+                  img_resize_factor=1.0):
     print('Importing images into the database...')
     images = list(image_dir.iterdir())
     if len(images) == 0:
@@ -67,6 +68,7 @@ def import_images(colmap_path, sfm_dir, image_dir, database_path,
         img_width, img_height = cam_param['image_size']
         assert 'cameraMatrix' in cam_param, 'cameraMatrix is missing in cam_param.'
         cam_K = cam_param['cameraMatrix']
+        cam_K = img_resize_factor * cam_K
         cmd = [
             str(colmap_path), 'feature_importer',
             '--database_path', str(database_path),
